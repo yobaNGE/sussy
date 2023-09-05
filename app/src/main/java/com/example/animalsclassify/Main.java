@@ -58,6 +58,7 @@ public class Main extends AppCompatActivity {
 
     private ImageCapture imageCapture;
 
+    private String TAG = "animalClass";
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         binding = ActivityMainBinding.inflate(getLayoutInflater());
@@ -66,36 +67,25 @@ public class Main extends AppCompatActivity {
         previewView = binding.previewView;
         registerActivityForPickImage();
 
-
-
-
         binding.takePic.setOnClickListener( v -> {
-                    String name = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).format(System.currentTimeMillis());
-
                     ContentValues contentValues = new ContentValues();
-                    contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, name);
+                    contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, System.currentTimeMillis());
                     contentValues.put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg");
                     contentValues.put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/CNN-Images");
-
                     ImageCapture.OutputFileOptions outputOptions =
                             new ImageCapture.OutputFileOptions.Builder(getContentResolver(),
-                                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                                    contentValues).build();
+                                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues).build();
 
                     imageCapture.takePicture(outputOptions, ContextCompat.getMainExecutor(this), new ImageCapture.OnImageSavedCallback() {
                         @Override
                         public void onImageSaved(@NonNull ImageCapture.OutputFileResults outputFileResults) {
-                            String text = "Success! File location: " + outputFileResults.getSavedUri();
                             classifyImage(getBitmapFromUri(outputFileResults.getSavedUri()));
-                            Toast.makeText(getBaseContext(), text, Toast.LENGTH_SHORT).show();
-                            Log.d("PhotoPicker", text);
+                            Log.d(TAG, outputFileResults.getSavedUri().toString());
                         }
 
                         @Override
                         public void onError(@NonNull ImageCaptureException exception) {
-                            String text = "Error: " + exception.getMessage();
-                            Toast.makeText(getBaseContext(), text, Toast.LENGTH_SHORT).show();
-                            Log.e("PhotoPicker", text);
+                            Log.e(TAG, "Error ImageCapture");
                         }
                     });
         }
@@ -141,17 +131,13 @@ public class Main extends AppCompatActivity {
         cameraProviderFuture.addListener(() -> {
             try {
                 ProcessCameraProvider cameraProvider = cameraProviderFuture.get();
-
-                // Настройка превью
                 Preview preview = new Preview.Builder().build();
                 preview.setSurfaceProvider(previewView.getSurfaceProvider());
                 imageCapture = new ImageCapture.Builder().build();
-                // Выбор задней камеры
                 CameraSelector cameraSelector = new CameraSelector.Builder()
                         .requireLensFacing(CameraSelector.LENS_FACING_BACK)
                         .build();
                 camera = cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture);
-
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -160,10 +146,10 @@ public class Main extends AppCompatActivity {
     private void registerActivityForPickImage() {
         pickVisualLauncher = registerForActivityResult(new ActivityResultContracts.PickVisualMedia(), uri -> {
             if (uri != null) {
-                Log.d("PhotoPicker", "Selected URI: " + uri);
+                Log.d(TAG, "Selected URI: " + uri);
                 classifyImage(getBitmapFromUri(uri));
             } else {
-                Log.d("PhotoPicker", "No media selected");
+                Log.d(TAG, "No media selected");
             }
         });
     }
@@ -219,7 +205,6 @@ public class Main extends AppCompatActivity {
         } catch (IOException e) {
             Log.d("PhotoPicker1", e.toString());
         }
-
         return classes[maxPos];
     }
 }
